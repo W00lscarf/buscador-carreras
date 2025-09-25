@@ -19,27 +19,6 @@ except Exception:
 
 st.set_page_config(page_title="Buscador de Carreras – Chile", layout="wide")
 st.title("Buscador de Carreras – Chile (SIES 2024–2025)")
-st.markdown("""
----
-### 📌 Fórmula de cálculo de la eficiencia
-
-El **índice de eficiencia** combina tres factores normalizados (min–max):
-
-- **Ingresos 2º año** (pondera 50%) – a mayor ingreso, mayor eficiencia.
-- **Empleabilidad 1er año** (pondera 30%) – a mayor empleabilidad, mayor eficiencia.
-- **Promedio PAES 2024** (pondera 20%, invertido) – mientras más bajo el puntaje de ingreso, mayor eficiencia relativa.
-
-La fórmula es:
-
-$$
-Eficiencia = 0.5 \times Ingreso_{norm} + 0.3 \times Empleabilidad_{norm} + 0.2 \times (1 - PAES_{norm})
-$$
-
-De esta forma, carreras que logran **buenos ingresos y empleabilidad con menores puntajes de entrada** aparecen más arriba en el ranking.
-""")
-
-st.caption("© 2025 – Prototipo académico. Fuente: Subsecretaría de Educación Superior – MiFuturo.cl (SIES 2024–2025).")
-
 st.caption(
     "Fuente: Subsecretaría de Educación Superior – Portal MiFuturo.cl (SIES 2024–2025).\n"
     "Este prototipo integra estadísticas por **carrera genérica** con el detalle por **institución**."
@@ -60,7 +39,7 @@ def read_excels_from_files(file1_path: str, file2_path: str):
     df1 = pd.read_excel(file1_path, sheet_name="Estadísticas x CG", header=1)
     df2 = pd.read_excel(file2_path, sheet_name="Buscador Carreras  2024-2025")
 
-    # Normalizar nombres de columnas (arreglado el salto de línea)
+    # Normalizar nombres de columnas (sin cortes de comillas)
     df1.columns = df1.columns.str.strip().str.replace("\n", " ", regex=False)
     df2.columns = df2.columns.str.strip().str.replace("\n", " ", regex=False)
 
@@ -82,13 +61,13 @@ def tidy_df1(df1: pd.DataFrame) -> pd.DataFrame:
     keep = [c for c in cols_map.keys() if c in df1.columns]
     out = df1[keep].rename(columns=cols_map).copy()
 
-    # Asegurar que empleabilidades estén en [0,1]
+    # Empleabilidades en [0,1]
     if "empleab_1a" in out.columns:
         out["empleab_1a"] = fix_percent_series(out["empleab_1a"])
     if "empleab_2a" in out.columns:
         out["empleab_2a"] = fix_percent_series(out["empleab_2a"])
 
-    # Ingresos a numérico por si acaso
+    # Ingresos a numérico
     for c in ["ingreso_1a", "ingreso_2a", "ingreso_3a", "ingreso_4a"]:
         if c in out.columns:
             out[c] = pd.to_numeric(out[c], errors="coerce")
@@ -97,7 +76,7 @@ def tidy_df1(df1: pd.DataFrame) -> pd.DataFrame:
 
 
 def tidy_df2(df2: pd.DataFrame) -> pd.DataFrame:
-    # Traemos columnas clave + Tipo de institución para filtrar Universidades
+    # Columnas clave + Tipo de institución para filtrar Universidades
     cols = [
         "Nombre institución",
         "Nombre carrera",
@@ -107,7 +86,7 @@ def tidy_df2(df2: pd.DataFrame) -> pd.DataFrame:
         "Arancel Anual 2025",
         "Promedio PAES 2024 de Matrícula 1er año 2024",
         "Promedio NEM 2024 de Matrícula 2024",
-        "Vacantes 1er semestre ",
+        "Vacantes 1er semestre",
         "Área Carrera Genérica",
         "Tipo de institución",
     ]
@@ -123,7 +102,7 @@ def tidy_df2(df2: pd.DataFrame) -> pd.DataFrame:
         "Arancel Anual 2025": "arancel_2025",
         "Promedio PAES 2024 de Matrícula 1er año 2024": "prom_paes_2024",
         "Promedio NEM 2024 de Matrícula 2024": "prom_nem_2024",
-        "Vacantes 1er semestre ": "vacantes_1s",
+        "Vacantes 1er semestre": "vacantes_1s",
         "Área Carrera Genérica": "carrera_generica",
         "Tipo de institución": "tipo_institucion",
     }
@@ -138,10 +117,11 @@ def tidy_df2(df2: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_master(df1_tidy: pd.DataFrame, df2_tidy: pd.DataFrame) -> pd.DataFrame:
-    # Filtrar solo Universidades en ambos (si la columna existe)
+    # Filtrar solo Universidades en ambos (si existe la columna)
     df1u = df1_tidy.copy()
     if "tipo_institucion" in df1u.columns:
         df1u = df1u[df1u["tipo_institucion"].str.contains("Universidad", case=False, na=False)]
+
     df2u = df2_tidy.copy()
     if "tipo_institucion" in df2u.columns:
         df2u = df2u[df2u["tipo_institucion"].str.contains("Universidad", case=False, na=False)]
@@ -236,7 +216,6 @@ with T1:
         row = view.loc[view["carrera_generica"] == q]
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Ingreso promedio 2º año", f"$ {row['ingreso_2a'].iloc[0]:,.0f}")
-        # Empleabilidad como porcentaje legible
         emp1 = float(row["empleab_1a"].iloc[0]) if not pd.isna(row["empleab_1a"].iloc[0]) else np.nan
         c2.metric("Empleabilidad 1er año", f"{emp1*100:.1f}%" if pd.notna(emp1) else "—")
         c3.metric("Promedio PAES 2024", f"{row['prom_paes_2024'].iloc[0]:.1f}")
@@ -290,18 +269,17 @@ with T3:
         title="Scatter: PAES vs Ingreso 2º año (Universidades)",
     )
 
-    # Línea de regresión simple (sin statsmodels)
+    # Línea de regresión simple + correlaciones
     if len(dv) >= 2:
         x = dv["prom_paes_2024"].to_numpy()
         y = dv["ingreso_2a"].to_numpy()
         m, b = np.polyfit(x, y, 1)
         x_line = np.linspace(x.min(), x.max(), 100)
         y_line = m * x_line + b
-        fig.add_traces(
-            px.line(x=x_line, y=y_line).data
-        )
+        line_fig = px.line(x=x_line, y=y_line)
+        for tr in line_fig.data:
+            fig.add_trace(tr)
 
-        # Correlaciones
         if SCIPY:
             r_p, _ = pearsonr(x, y)
             r_s, _ = spearmanr(x, y)
@@ -318,6 +296,28 @@ with T3:
         )
 
     st.plotly_chart(fig, use_container_width=True)
+
+# -------------------------------------------------------------
+# Explicación de la fórmula de eficiencia
+# -------------------------------------------------------------
+st.markdown("""
+---
+### 📌 Fórmula de cálculo de la eficiencia
+
+El **índice de eficiencia** combina tres factores normalizados (min–max):
+
+- **Ingresos 2º año** (pondera 50%) – a mayor ingreso, mayor eficiencia.
+- **Empleabilidad 1er año** (pondera 30%) – a mayor empleabilidad, mayor eficiencia.
+- **Promedio PAES 2024** (pondera 20%, invertido) – mientras más bajo el puntaje de ingreso, mayor eficiencia relativa.
+
+La fórmula es:
+
+$$
+Eficiencia = 0.5 \\times Ingreso_{norm} + 0.3 \\times Empleabilidad_{norm} + 0.2 \\times (1 - PAES_{norm})
+$$
+
+De esta forma, carreras que logran **buenos ingresos y empleabilidad con menores puntajes de entrada** aparecen más arriba en el ranking.
+""")
 
 # Footer
 st.caption("© 2025 – Prototipo académico. Fuente: Subsecretaría de Educación Superior – MiFuturo.cl (SIES 2024–2025).")
