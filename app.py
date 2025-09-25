@@ -207,7 +207,7 @@ st.success(
     f"Datos cargados. Estadísticas: {len(df1_tidy):,} filas | Instituciones: {len(df2_tidy):,} filas | "
     f"Ranking (solo Universidades): {len(master):,} carreras genéricas."
 )
-
+track("app_loaded")
 # -------------------------------------------------------------
 # Sidebar filtros
 # -------------------------------------------------------------
