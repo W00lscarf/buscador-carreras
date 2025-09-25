@@ -232,6 +232,7 @@ with T1:
     q = st.selectbox("Selecciona la carrera genérica", options=carreras)
 
     if q:
+        track("career_viewed", carrera=q)
         row = view.loc[view["carrera_generica"] == q]
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Ingreso promedio 2º año", f"$ {row['ingreso_2a'].iloc[0]:,.0f}")
