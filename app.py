@@ -19,6 +19,27 @@ except Exception:
 
 st.set_page_config(page_title="Buscador de Carreras – Chile", layout="wide")
 st.title("Buscador de Carreras – Chile (SIES 2024–2025)")
+st.markdown("""
+---
+### 📌 Fórmula de cálculo de la eficiencia
+
+El **índice de eficiencia** combina tres factores normalizados (min–max):
+
+- **Ingresos 2º año** (pondera 50%) – a mayor ingreso, mayor eficiencia.
+- **Empleabilidad 1er año** (pondera 30%) – a mayor empleabilidad, mayor eficiencia.
+- **Promedio PAES 2024** (pondera 20%, invertido) – mientras más bajo el puntaje de ingreso, mayor eficiencia relativa.
+
+La fórmula es:
+
+$$
+Eficiencia = 0.5 \times Ingreso_{norm} + 0.3 \times Empleabilidad_{norm} + 0.2 \times (1 - PAES_{norm})
+$$
+
+De esta forma, carreras que logran **buenos ingresos y empleabilidad con menores puntajes de entrada** aparecen más arriba en el ranking.
+""")
+
+st.caption("© 2025 – Prototipo académico. Fuente: Subsecretaría de Educación Superior – MiFuturo.cl (SIES 2024–2025).")
+
 st.caption(
     "Fuente: Subsecretaría de Educación Superior – Portal MiFuturo.cl (SIES 2024–2025).\n"
     "Este prototipo integra estadísticas por **carrera genérica** con el detalle por **institución**."
