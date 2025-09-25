@@ -1,3 +1,4 @@
+
 # app.py
 # -------------------------------------------------------------
 # Buscador de carreras (Chile) con datos SIES 2024–2025
@@ -9,6 +10,24 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from pathlib import Path
+import os, uuid
+from posthog import Posthog
+
+POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY")
+POSTHOG_HOST = os.getenv("POSTHOG_HOST", "https://us.i.posthog.com")
+posthog = Posthog(POSTHOG_API_KEY, host=POSTHOG_HOST) if POSTHOG_API_KEY else None
+
+# ID único por visitante (por sesión de Streamlit)
+if "distinct_id" not in st.session_state:
+    st.session_state["distinct_id"] = str(uuid.uuid4())
+
+def track(event_name, **props):
+    if posthog:
+        posthog.capture(
+            distinct_id=st.session_state["distinct_id"],
+            event=event_name,
+            properties=props
+        )
 
 # Opcional: correlaciones
 try:
