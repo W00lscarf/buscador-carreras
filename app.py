@@ -42,10 +42,9 @@ def read_excels_from_files(file1_path: str, file2_path: str):
     df2 = pd.read_excel(file2_path, sheet_name="Buscador Carreras  2024-2025")
 
     # Normalizar columnas (remover saltos de línea y espacios)
-    df1.columns = df1.columns.str.strip().str.replace("
-", " ", regex=False)
-    df2.columns = df2.columns.str.strip().str.replace("
-", " ", regex=False)
+df1.columns = df1.columns.str.strip().str.replace("\n", " ", regex=False)
+df2.columns = df2.columns.str.strip().str.replace("\n", " ", regex=False)
+
 
     return df1, df2
 
